@@ -1,0 +1,30 @@
+{
+  "name": "react-reduxify",
+  "version": "1.0.0",
+  "description": "This library contains just a single and simple function to ease the pain and headache of using redux in react class components",
+  "main": "index.cjs.js",
+  "module": "index.esm.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ironcodev/react-reduxify.git"
+  },
+  "keywords": [
+    "react",
+    "redux",
+    "reduxify"
+  ],
+  "author": "Iron Code",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ironcodev/react-reduxify/issues"
+  },
+  "homepage": "https://github.com/ironcodev/react-reduxify#readme",
+  "dependencies": {},
+  "peerDependencies": {
+	"react-redux": "^7.2.2"
+  },
+  "devDependencies": { }
+}
