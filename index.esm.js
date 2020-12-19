@@ -1,23 +1,36 @@
 import { connect } from "react-redux";
 
 function setProperty(source, prop, target) {
-	let current = target;
 	let obj = source;
-	let key = prop;
+	let colonIndex = prop.indexOf(':');
+	let key = colonIndex > 0 ? prop.substr(colonIndex + 1).trim(): prop.trim();
+	let current = colonIndex > 0 ? undefined: target;
 
 	while (true) {
 		let dotIndex = key.indexOf('.');
-		
+
 		if (dotIndex < 0) {
-			current[key] = obj && obj[key];
-			
+			if (colonIndex <= 0) {
+				current[key] = obj && obj[key];
+			} else {
+				current = obj && obj[key]
+			}
+
 			break;
 		} else {
 			const subKey = key.substr(0, dotIndex);
-			current = current[subKey] = {}
+			
+			if (colonIndex <= 0) {
+				current = current[subKey] = {}
+			}
+
 			obj = obj && obj[subKey];
 			key = key.substr(dotIndex + 1);
 		}
+	}
+
+	if (colonIndex > 0) {
+		target[prop.substr(0, colonIndex).trim()] = current;
 	}
 }
 

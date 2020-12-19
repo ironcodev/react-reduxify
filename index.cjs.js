@@ -16,22 +16,36 @@ function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len 
 function _instanceof(left, right) { if (right != null && typeof Symbol !== "undefined" && right[Symbol.hasInstance]) { return !!right[Symbol.hasInstance](left); } else { return left instanceof right; } }
 
 function setProperty(source, prop, target) {
-  var current = target;
   var obj = source;
-  var key = prop;
+  var colonIndex = prop.indexOf(':');
+  var key = colonIndex > 0 ? prop.substr(colonIndex + 1).trim() : prop.trim();
+  var current = colonIndex > 0 ? undefined : target;
 
   while (true) {
     var dotIndex = key.indexOf('.');
 
     if (dotIndex < 0) {
-      current[key] = obj && obj[key];
+      if (colonIndex <= 0) {
+        current[key] = obj && obj[key];
+      } else {
+        current = obj && obj[key];
+      }
+
       break;
     } else {
       var subKey = key.substr(0, dotIndex);
-      current = current[subKey] = {};
+
+      if (colonIndex <= 0) {
+        current = current[subKey] = {};
+      }
+
       obj = obj && obj[subKey];
       key = key.substr(dotIndex + 1);
     }
+  }
+
+  if (colonIndex > 0) {
+    target[prop.substr(0, colonIndex).trim()] = current;
   }
 }
 
