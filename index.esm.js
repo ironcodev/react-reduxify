@@ -51,7 +51,7 @@ const reduxify = function (component, neededState, neededActions, mergeOptions, 
             }
         }
 
-        return result
+        return result || {}
     }
     const mapDispatchToProps = typeof(neededActions) == 'function' ? neededActions
 		:
@@ -72,7 +72,7 @@ const reduxify = function (component, neededState, neededActions, mergeOptions, 
 				}
 			}
 
-			return result
+			return result || {}
 		}
 
     return connect(mapStateToProps, mapDispatchToProps, mergeOptions, options)(component)
