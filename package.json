@@ -1,6 +1,6 @@
 {
   "name": "react-reduxify",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "This library contains just a single and simple function to ease the pain and headache of using redux in react class components",
   "main": "index.cjs.js",
   "module": "index.esm.js",

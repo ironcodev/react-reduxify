@@ -1,9 +1,10 @@
 
 
+
 # react-reduxify
 This library contains just a single and simple function to ease the pain and headache of using redux connect function.
 
-Instead of using mapStateToProps, mapDispatchToProps and the cryptic and scary ```connect()``` function ...
+Instead of using mapStateToProps, mapDispatchToProps and the cryptic and scary `connect()` function ...
 
 ```javascript
 import { connect } from 'react-redux'
@@ -32,7 +33,7 @@ export default connect(
 )(Counter)
 ```
 
-Connect your component with redux using the simpler  ```reduxify()``` function ...
+Connect your component with redux using the simpler  `reduxify()` function ...
 
 ```javascript
 import reduxify from 'react-reduxify'
@@ -43,7 +44,7 @@ export default reduxify(Counter, 'count', { increment, decrement })
 Isn't it simpler and more readable?
 
 ## API
-The signature of ```reduxify()``` method is this way:
+The signature of `reduxify()` method is this way:
 ```javascript
 function reduxify(component, neededState, neededActions, mergeOptions, options) {
 ...
@@ -53,12 +54,12 @@ function reduxify(component, neededState, neededActions, mergeOptions, options) 
 |parameter	| type | description |
 |-------------|-------|--------------|
 |component|React class or function component|The component to be connected to redux |
-|neededState|object, Array, string|List of state items to be retrieved from redux store. This could be a string containing comma separated list of state names (like ```"count,started"```), an array of strings (like ```['count', 'started']```) or an object whose properties are state names (like ```{ count: 0, started: true }```). |
-|neededActions|function or object|An object containing actions or a function that returns such object (similar to second parameter of ```connect()```, i.e. mapDispatchToProps |
-|mergeOptions|function|Optional. Similar to mergeOptions in ```connect()```|
-|options|object|Optional. Similar to options in ```connect()```|
+|neededState|object, Array, string|List of state items to be retrieved from redux store. This could be a string containing comma separated list of state names (like `"count,started"`), an array of strings (like `['count', 'started']`) or an object whose properties are state names (like `{ count: 0, started: true }`). |
+|neededActions|function or object|An object containing actions or a function that returns such object (similar to second parameter of `connect()`, i.e. mapDispatchToProps |
+|mergeOptions|function|Optional. Similar to mergeOptions in `connect()`|
+|options|object|Optional. Similar to options in `connect()`|
 
-## ```neededStates``` parameter
+## `neededStates` parameter
 As it is said , the argument specified for this parameter could be either of the followings:
 - string
 - array of string or object
@@ -67,12 +68,12 @@ As it is said , the argument specified for this parameter could be either of the
 ### string
 We can specify a comma separated list of state items as string. Each item in the string could have the following format:
 
-<center>```{name?}:{key}={default_value?}```</center>
+<center>`{name?}:{key}={default_value?}`</center>
 <br/>
 
 name and default value are optional. If name is not specified, speciifed state item will be propagated into the props corresponding the way it is specified (this is explained in 'state name chain' section).
 #### name
-We can specify a name for the extracted state item to have in the props of our React component. For example ```reduxify(Counter, 'mycount:count')``` means to set a property named ```mycount``` in the props. This is similar to the following code:
+We can specify a name for the extracted state item to have in the props of our React component. For example `reduxify(Counter, 'mycount:count')` means to set a property named `mycount` in the props. This is similar to the following code:
 ```javascript
 const mapStateToProps = state => ({ mycount: state.count });
 export default connect(mapStateToProps)(Counter);
@@ -85,11 +86,11 @@ export default reduxify(Counter, 'mycount:count=0'); // if state.count was undef
                                                      // used for props.mycount
 ```
 #### state name chain
-We can use dot character for the name of state items we want to specify in neededStates, like ```"parent.child.grandChild"```. ```reduxify() ``` extracts the requested state item from redux store and sets a correct object in the props, even if the store does not contain the requested chain of state items.
+We can use dot character for the name of state items we want to specify in neededStates, like `"parent.child.grandChild"`. `reduxify() ` extracts the requested state item from redux store and sets a correct object in the props, even if the store does not contain the requested chain of state items.
 ```javascript
 reduxify(Counter, 'counters.socials.like_count');
 ```
-After the above code, the ```props``` in ```Counter``` would be:
+After the above code, the `props` in `Counter` would be:
 ```
 // props
 {
@@ -100,6 +101,14 @@ After the above code, the ```props``` in ```Counter``` would be:
   }
 }
 ```
+Using an exclamation mark (!) we can negate this propagation behavior. In this case, the last property name will be assumed as the prop name for the state item.
+
+Example:
+```javascript
+export default reduxify(Counter, '!counters.socials.likes');
+```
+Here, instead of propagating requested state (`state.counters.socials.likes`) onto the props, a property named `likes` will be set for props with the value of `state.counters.socials.likes`.
+
 #### Specifying list of state items
 Here is an example with a list of state items:
 ```javascript
@@ -163,7 +172,7 @@ export default reduxify(Counter, {
 A mixed of various values for property names could also be used.
 
 ## dispatch
-By default, ```reduxify()``` puts ```dispatch``` in the props as well. So, there's no need to specify neededActions. We can use dispatch directly without the need to set a property on the props and use those properties.
+By default, `reduxify()` puts `dispatch` in the props as well. So, there's no need to specify neededActions. We can use dispatch directly without the need to set a property on the props and use those properties.
 
 ```javascript
 import reduxify from 'react-reduxify'
