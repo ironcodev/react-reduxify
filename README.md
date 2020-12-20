@@ -53,8 +53,8 @@ function reduxify(component, neededState, neededActions, mergeOptions, options) 
 |parameter	| type | description |
 |-------------|-------|--------------|
 |component|React class or function component|The component to be connected to redux |
-|neededState|object, Array, string|List of state items to be retrieved from redux store. This could be a string containing comma separated list of state names (like ```"count,started"```), an array of strings (like ```['count', 'started']```) or an object whose properties are state names (like ```{ count: true, started: true }```). |
-|neededActions|function or object|An object containing actions or a function that returns such object (similar to second parameter of ```connect()``` function, i.e. mapDispatchToProps |
+|neededState|object, Array, string|List of state items to be retrieved from redux store. This could be a string containing comma separated list of state names (like ```"count,started"```), an array of strings (like ```['count', 'started']```) or an object whose properties are state names (like ```{ count: 0, started: true }```). |
+|neededActions|function or object|An object containing actions or a function that returns such object (similar to second parameter of ```connect()```, i.e. mapDispatchToProps |
 |mergeOptions|function|Optional. Similar to mergeOptions in ```connect()```|
 |options|object|Optional. Similar to options in ```connect()```|
 
@@ -65,11 +65,12 @@ As it is said , the argument specified for this parameter could be either of the
 - object
 
 ### string
-Wecan specify a comma separated list of state items as as string. Each item in the string could have the following format:
+We can specify a comma separated list of state items as string. Each item in the string could have the following format:
 
-<center>{name}:{key}={default value}</center>
+<center>```{name?}:{key}={default_value?}```</center>
+<br/>
 
-name and default value are optional.
+name and default value are optional. If name is not specified, speciifed state item will be propagated into the props corresponding the way it is specified (this is explained in 'state name chain' section).
 #### name
 We can specify a name for the extracted state item to have in the props of our React component. For example ```reduxify(Counter, 'mycount:count')``` means to set a property named ```mycount``` in the props. This is similar to the following code:
 ```javascript
@@ -88,7 +89,7 @@ We can use dot character for the name of state items we want to specify in neede
 ```javascript
 reduxify(Counter, 'counters.socials.like_count');
 ```
-After the above code, the ```props``` in Counter would be:
+After the above code, the ```props``` in ```Counter``` would be:
 ```
 // props
 {
@@ -109,7 +110,7 @@ We can specify an array of string or object for neededStates.
 ```javascript
 export default reduxify(Counter, ['likes:counter.like_count', 'hits:counters.hit_count']);
 ```
-When using objects, the objects should follow the following format:
+When using objects, the objects should follow this format:
 ```javascript
 {
    name: '...',       // string: prop name (optional).
@@ -140,26 +141,26 @@ export default reduxify(Counter, {
      hits: 'counters.hit_count'}
 });
 ```
-Example 3: default values
+Example 2: default values
 ```javascript
 export default reduxify(Counter, {
      likes: 0,	// state item = state.likes
      hits: 1    // state item = state.hits
 });
 ```
-This is similar to:
+This is -almost- similar to:
 ```javascript
 const mapStateToProps = state => ({ likes: state.likes, hits: state.hits })
 export default connect(mapStateToProps)(Counter);
 ```
-Example 2: object values (names in props would be property names by default)
+Example 3: object values (names in props would be property names by default)
 ```javascript
 export default reduxify(Counter, {
      likes: { state: 'counters.like_count', default: 0 },
      hits: { state: 'counters.hit_count', default: 1 }
 });
 ```
-A mixed of all various values for property names could also be used.
+A mixed of various values for property names could also be used.
 
 ## dispatch
 By default, ```reduxify()``` puts ```dispatch``` in the props as well. So, there's no need to specify neededActions. We can use dispatch directly without the need to set a property on the props and use those properties.
