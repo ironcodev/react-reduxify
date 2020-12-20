@@ -61,7 +61,7 @@ const reduxify = function (component, neededStates, neededActions, mergeOptions,
 					if (isString(stateKey)) {
 						setProperty(state, stateKey, result);
 					} else if (isObject(stateKey)) {
-						setProperty(state, stateKey.state, result, stateKey.default);
+						setProperty(state, (stateKey.name ? `${stateKey.name}:${stateKey.state}`: stateKey.state), result, stateKey.default);
 					}
                 }
             } else {
@@ -79,7 +79,11 @@ const reduxify = function (component, neededStates, neededActions, mergeOptions,
                             result = {}
                         }
 
-						setProperty(state, (stateKey.state ? `${key}:${stateKey.state}`: key), result, stateKey.default);
+						if (stateKey.name) {
+							setProperty(state, (stateKey.state ? `${stateKey.name}:${stateKey.state}`: `${stateKey.name}:${key}`), result, stateKey.default);
+						} else {
+							setProperty(state, (stateKey.state ? `${key}:${stateKey.state}`: key), result, stateKey.default);
+						}
                     } else {
 						if (result == null) {
                             result = {}

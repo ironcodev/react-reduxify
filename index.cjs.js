@@ -87,7 +87,7 @@ var reduxify = function reduxify(component, neededStates, neededActions, mergeOp
             if (isString(stateKey)) {
               setProperty(state, stateKey, result);
             } else if (isObject(stateKey)) {
-              setProperty(state, stateKey.state, result, stateKey.default);
+              setProperty(state, stateKey.name ? "".concat(stateKey.name, ":").concat(stateKey.state) : stateKey.state, result, stateKey.default);
             }
           }
         } catch (err) {
@@ -111,7 +111,11 @@ var reduxify = function reduxify(component, neededStates, neededActions, mergeOp
               result = {};
             }
 
-            setProperty(state, _stateKey.state ? "".concat(key, ":").concat(_stateKey.state) : key, result, _stateKey.default);
+            if (_stateKey.name) {
+              setProperty(state, _stateKey.state ? "".concat(_stateKey.name, ":").concat(_stateKey.state) : "".concat(_stateKey.name, ":").concat(key), result, _stateKey.default);
+            } else {
+              setProperty(state, _stateKey.state ? "".concat(key, ":").concat(_stateKey.state) : key, result, _stateKey.default);
+            }
           } else {
             if (result == null) {
               result = {};
