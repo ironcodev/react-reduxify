@@ -27,6 +27,20 @@ var isObject = function isObject(x) {
 
 function setProperty(source, prop, target, defaultValue) {
   var obj = source;
+
+  if (prop.startsWith('!') && prop.indexOf(':') < 0) {
+    var lastDotIndex = prop.lastIndexOf('.');
+    var lastEqIndex = prop.lastIndexOf('=');
+
+    if (lastDotIndex > 0) {
+      if (lastEqIndex > lastDotIndex) {
+        prop = prop.substr(lastDotIndex + 1, lastEqIndex - lastDotIndex - 1) + ':' + prop.substr(1);
+      } else {
+        prop = prop.substr(lastDotIndex + 1) + ':' + prop.substr(1);
+      }
+    }
+  }
+
   var colonIndex = prop.indexOf(':');
   var key = colonIndex > 0 ? prop.substr(colonIndex + 1).trim() : prop.trim();
   var current = colonIndex > 0 ? defaultValue : target;
