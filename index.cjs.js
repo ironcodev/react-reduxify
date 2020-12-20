@@ -13,22 +13,36 @@ function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o =
 
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
 function _instanceof(left, right) { if (right != null && typeof Symbol !== "undefined" && right[Symbol.hasInstance]) { return !!right[Symbol.hasInstance](left); } else { return left instanceof right; } }
 
-function setProperty(source, prop, target) {
+var isString = function isString(x) {
+  return typeof x == 'string' || _instanceof(x, String);
+};
+
+var isObject = function isObject(x) {
+  return _typeof(x) == 'object' && x != null;
+};
+
+function setProperty(source, prop, target, defaultValue) {
   var obj = source;
   var colonIndex = prop.indexOf(':');
   var key = colonIndex > 0 ? prop.substr(colonIndex + 1).trim() : prop.trim();
-  var current = colonIndex > 0 ? undefined : target;
+  var current = colonIndex > 0 ? defaultValue : target;
 
   while (true) {
     var dotIndex = key.indexOf('.');
 
     if (dotIndex < 0) {
+      var eqIndex = key.indexOf('=');
+      defaultValue = defaultValue == undefined && eqIndex >= 0 ? key.substr(eqIndex + 1) : defaultValue;
+      var finalKey = eqIndex >= 0 ? key.substr(0, eqIndex).trim() : key;
+
       if (colonIndex <= 0) {
-        current[key] = obj && obj[key];
+        current[finalKey] = obj && obj[finalKey] || defaultValue;
       } else {
-        current = obj && obj[key];
+        current = obj && obj[finalKey] || defaultValue;
       }
 
       break;
@@ -49,17 +63,17 @@ function setProperty(source, prop, target) {
   }
 }
 
-var reduxify = function reduxify(component, neededState, neededActions, mergeOptions, options) {
+var reduxify = function reduxify(component, neededStates, neededActions, mergeOptions, options) {
   var mapStateToProps = function mapStateToProps(state) {
     var result = null;
 
-    if (neededState != null) {
-      if (typeof neededState == 'string' || _instanceof(neededState, String)) {
-        neededState = neededState.split(',');
+    if (neededStates != null) {
+      if (isString(neededStates)) {
+        neededStates = neededStates.split(',');
       }
 
-      if (Array.isArray(neededState)) {
-        var _iterator = _createForOfIteratorHelper(neededState),
+      if (Array.isArray(neededStates)) {
+        var _iterator = _createForOfIteratorHelper(neededStates),
             _step;
 
         try {
@@ -70,7 +84,11 @@ var reduxify = function reduxify(component, neededState, neededActions, mergeOpt
               result = {};
             }
 
-            setProperty(state, (stateKey || '').trim(), result);
+            if (isString(stateKey)) {
+              setProperty(state, stateKey, result);
+            } else if (isObject(stateKey)) {
+              setProperty(state, stateKey.state, result, stateKey.default);
+            }
           }
         } catch (err) {
           _iterator.e(err);
@@ -78,21 +96,34 @@ var reduxify = function reduxify(component, neededState, neededActions, mergeOpt
           _iterator.f();
         }
       } else {
-        for (var _i = 0, _Object$keys = Object.keys(neededState); _i < _Object$keys.length; _i++) {
+        for (var _i = 0, _Object$keys = Object.keys(neededStates); _i < _Object$keys.length; _i++) {
           var key = _Object$keys[_i];
+          var _stateKey = neededStates[key];
 
-          if (state[key]) {
+          if (isString(_stateKey)) {
             if (result == null) {
               result = {};
             }
 
-            setProperty(state, key, result);
+            setProperty(state, _stateKey ? "".concat(key, ":").concat(_stateKey) : key, result);
+          } else if (isObject(_stateKey)) {
+            if (result == null) {
+              result = {};
+            }
+
+            setProperty(state, _stateKey.state ? "".concat(key, ":").concat(_stateKey.state) : key, result, _stateKey.default);
+          } else {
+            if (result == null) {
+              result = {};
+            }
+
+            setProperty(state, key, result, _stateKey);
           }
         }
       }
     }
 
-    return result || {};
+    return result;
   };
 
   var mapDispatchToProps = typeof neededActions == 'function' ? neededActions : function (dispatch) {

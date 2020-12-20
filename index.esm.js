@@ -1,19 +1,28 @@
 import { connect } from "react-redux";
 
-function setProperty(source, prop, target) {
+const isString = x => typeof(x) == 'string' || x instanceof String;
+const isObject = x => typeof(x) == 'object' && x != null;
+
+function setProperty(source, prop, target, defaultValue) {
 	let obj = source;
 	let colonIndex = prop.indexOf(':');
 	let key = colonIndex > 0 ? prop.substr(colonIndex + 1).trim(): prop.trim();
-	let current = colonIndex > 0 ? undefined: target;
+	let current = colonIndex > 0 ? defaultValue: target;
 
 	while (true) {
 		let dotIndex = key.indexOf('.');
 
 		if (dotIndex < 0) {
+			let eqIndex = key.indexOf('=');
+
+			defaultValue = defaultValue == undefined && eqIndex >= 0 ? key.substr(eqIndex + 1) : defaultValue;
+			
+			const finalKey = eqIndex >= 0 ? key.substr(0, eqIndex).trim(): key;
+
 			if (colonIndex <= 0) {
-				current[key] = obj && obj[key];
+				current[finalKey] = (obj && obj[finalKey]) || defaultValue;
 			} else {
-				current = obj && obj[key]
+				current = (obj && obj[finalKey]) || defaultValue;
 			}
 
 			break;
@@ -34,37 +43,55 @@ function setProperty(source, prop, target) {
 	}
 }
 
-const reduxify = function (component, neededState, neededActions, mergeOptions, options) {
+const reduxify = function (component, neededStates, neededActions, mergeOptions, options) {
     const mapStateToProps = function (state) {
         let result = null;
 
-        if (neededState != null) {
-			if (typeof(neededState) == 'string' || neededState instanceof String) {
-				neededState = neededState.split(',');
+        if (neededStates != null) {
+			if (isString(neededStates)) {
+				neededStates = neededStates.split(',');
 			}
 			
-            if (Array.isArray(neededState)) {
-                for (let stateKey of neededState) {
+            if (Array.isArray(neededStates)) {
+                for (let stateKey of neededStates) {
                     if (result == null) {
                         result = {}
                     }
 					
-					setProperty(state, (stateKey || '').trim(), result);
+					if (isString(stateKey)) {
+						setProperty(state, stateKey, result);
+					} else if (isObject(stateKey)) {
+						setProperty(state, stateKey.state, result, stateKey.default);
+					}
                 }
             } else {
-                for (let key of Object.keys(neededState)) {
-                    if (state[key]) {
+                for (let key of Object.keys(neededStates)) {
+					const stateKey = neededStates[key];
+
+					if (isString(stateKey)) {
+						if (result == null) {
+                            result = {}
+						}
+
+						setProperty(state, (stateKey ? `${key}:${stateKey}`: key), result);
+					} else if (isObject(stateKey)) {
                         if (result == null) {
                             result = {}
                         }
 
-						setProperty(state, key, result);
-                    }
+						setProperty(state, (stateKey.state ? `${key}:${stateKey.state}`: key), result, stateKey.default);
+                    } else {
+						if (result == null) {
+                            result = {}
+                        }
+
+						setProperty(state, key, result, stateKey);
+					}
                 }
             }
         }
 
-        return result || {}
+        return result
     }
     const mapDispatchToProps = typeof(neededActions) == 'function' ? neededActions
 		:
