@@ -1,7 +1,13 @@
 import { connect } from "react-redux";
-
-const isString = x => typeof (x) == 'string' || x instanceof String;
-const isObject = x => typeof (x) == 'object' && x != null;
+import {
+	isString,
+	isObject,
+	isSomeString,
+	isSomeObject,
+	isArray,
+	isSomeArray,
+	isFunction,
+} from 'locustjs-base';
 
 function setProperty(source, prop, target, defaultValue) {
 	let obj = source;
@@ -58,7 +64,98 @@ function setProperty(source, prop, target, defaultValue) {
 	}
 }
 
+const createActionFactory = (type, payloadName) => (x) => ({ type, [payloadName]: x });
+
+function* initStoreDefinitions(definitions) {
+	for (let item of definitions) {
+		let definition;
+
+		if (isSomeObject(item)) {
+			/*
+				{
+					type: [string],
+					stateName: [string],
+					stateInitialValue: [any?],  // default: undefined
+					actionName: [string?],      // default: 'set' + stateName[0].toUpperCase() + stateName.substr(1)
+					action: [function?],        // default: createActionFactory(type, stateName)
+					reducer: [function?]        // default: { ...state, [stateName]: action[stateName]}
+				}
+			*/
+			definition = [item.type, item.stateName, item.stateInitialValue, item.actionName, item.action, item.reducer];
+		} else {
+			definition = item
+		}
+
+		if (isSomeArray(definition) && isSomeString(definition[0]) && isSomeString(definition[1])) {
+			yield definition;
+		}
+	}
+}
+
+const createActionReducer = definitions => {
+	const actions = {}
+	const initialState = {}
+	const _definitions = initStoreDefinitions(definitions);
+
+	for (let definition of _definitions) {
+		/*
+			[
+				type,
+				stateName,
+				stateInitialValue?,	// default: undefined
+				actionName?,		// default: 'set' + stateName[0].toUpperCase() + stateName.substr(1)
+				action?,			// default: createActionFactory(type, stateName)
+				reducer?			// default: { ...state, [stateName]: action[stateName]}
+			]
+		*/
+		const type = definition[0];
+		const stateName = definition[1];
+		const actionName = definition.length > 3 && isSomeString(definition[3]) ? definition[3] : ('set' + stateName[0].toUpperCase() + stateName.substr(1));
+		const action = definition.length > 4 && isFunction(definition[4]) ? definition[4] : createActionFactory(type, stateName);
+
+		actions[actionName] = action;
+
+		const stateInitialValue = definition.length > 2 ? definition[2] : undefined;
+
+		if (isFunction(stateInitialValue)) {
+			initialState[stateName] = stateInitialValue()
+		} else {
+			initialState[stateName] = stateInitialValue
+		}
+	}
+
+	const reducer = (state = initialState, action) => {
+		const _definitions = initStoreDefinitions(definitions);
+
+		for (let definition of _definitions) {
+			const type = definition[0]
+			const stateName = definition[1];
+
+			if (action.type == type) {
+				const result = definition.length > 5 && isFunction(definition[5]) ? definition[5](state, action) : ({
+					...state,
+					[stateName]: action[stateName]
+				});
+
+				return result;
+			}
+		}
+
+		return state;
+	}
+
+	return ({ actions, initialState, reducer })
+}
+
 const reduxify = function (component, neededStates, neededActions, mergeOptions, options) {
+	if (arguments.length == 0) {
+		return;
+	}
+
+	if (arguments.length == 1 && isArray(component)) {
+		return createActionReducer(component)
+	}
+
 	const mapStateToProps = function (state) {
 		let result = null;
 
@@ -67,7 +164,7 @@ const reduxify = function (component, neededStates, neededActions, mergeOptions,
 				neededStates = neededStates.split(',');
 			}
 
-			if (Array.isArray(neededStates)) {
+			if (isArray(neededStates)) {
 				for (let stateKey of neededStates) {
 					if (result == null) {
 						result = {}
@@ -138,3 +235,8 @@ const reduxify = function (component, neededStates, neededActions, mergeOptions,
 }
 
 export default reduxify;
+export {
+	setProperty,
+	createActionFactory,
+	createActionReducer
+}
