@@ -2,8 +2,9 @@
 
 
 # react-reduxify
-This library contains just a single and simple function to ease the pain and headache of using redux connect function.
+This library contains a single 'reduxify' function to ease using redux.
 
+# First Usage: reduxify() over connect()
 Instead of using mapStateToProps, mapDispatchToProps and the cryptic and scary `connect()` function ...
 
 ```javascript
@@ -189,3 +190,338 @@ const Counter = (props) => {
 export default reduxify(Counter, 'count')
 ```
 This behavior is similar to ```connect()```, but the difference is ```connect``` refrains from setting ```dispatch``` for the props if you specify mapDispatchToProps for it. Reduxify always sets ```dispatch``` for the props even if you specify neededActions (unless you specify a ```{ dispatch: false }``` item in the neededActions and explicitly say that you don't want to have ```dispatch``` in the props).
+
+# Second Usage: reduxify() over manually defining actions and reducers
+Instead of writing these boilerplate codes ...
+
+```javascript
+// ------------ ./reducers/counter.js
+const INCREMENT = 'INCREMENT';
+const DECREMENT = 'DECREMENT';
+
+// actions
+const increment = (x) => ({ type: INCREMENT })
+const decrement = (x) => ({ type: DECREMENT })
+
+const counterReducer = (state = { count: 0 }, action) {
+	switch (action.type) {
+		case INCREMENT: return { ...state, count: state.count + 1 }
+		case DECREMENT: return { ...state, count: state.count - 1 }
+	}
+	
+	return state;
+}
+
+export {
+	INCREMENT,
+	DECREMENT,
+	increment,
+	decrement,
+	counterReducer
+}
+```
+
+Simplify it by using reduxify() this way ...
+
+```javascript
+import reduxify from 'react-reduxify'
+
+const counterActionReducer = reduxify({
+	state: { count: 0 },
+	action: [
+		increment: (s, a) => ({ ...s, count: s.count + 1 }),
+		decrement: (s, a) => ({ ...s, count: s.count - 1 })
+	]
+});
+
+export default counterActionReducer;
+```
+
+That's all!
+
+The result of `reduxify()` in this usage is an object with the following format.
+
+```
+     {
+          actions: [],        // array of actions (each action is a function),
+          initialState: {},   // an object that holds the initial state for the reducer
+          reducer: function   // the final reducer that is created
+     }
+```
+
+There is no need to know about action type values. The generated 'reducer' internally uses custom action types.
+
+Here is an example on how to use the `reduxify` result in this second usage.
+
+```javascript
+// -------------- index.js ----------------
+import counterActionReducer from './reducers/counter.js';
+import { createStore } from 'redeux'
+
+const store = createStore(counterActionReducer.reducer)
+
+// -------------- ./Components/Counter.js ----------------
+import React from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import counterActionReducer from '../reducers/counter.js';
+import reduxify from 'react-reduxify'
+
+const Counter = () => {
+     const count = useSelector(state => state.count);
+     const dispatch = useDispatch();
+     const { increment, decrement } = counterActionReducer.actions;
+
+	return (<div>
+		Count = <span>{count}</span>
+		<button onClick={() => dispatch(increment())}>Increment</button>
+		<button onClick={() => dispatch(decrement())}>Decrement</button>
+	</div>)
+}
+
+export default Counter;
+```
+
+## Action/Reducer definition
+The array we pass to `reduxify` includes a list of action/reducer definition. Each item could be an object or an array.
+
+When using an object, the object should follow the following format:
+
+```javascript
+     {
+          type: '',                // optional: string: type of action.
+          state: ...,              // required: string or object: state item
+          action: ...,             // optional: string | array | object: explicit action. name (default is 'set' + stateName in pascal-case).
+          reducer: function        // optional: function : custom reducer.
+     }
+```
+
+Examples:
+```
+{ state: 'count' }		// default state value = undefined, action = setCount
+{
+	state: { count: 0 }	// default state value = 0
+}						// action = setCount
+{ state: 'count', action: 'setClickCount' }		// default state value = undefined, action = setClickCount
+{
+	state: { count: 0 },
+	action: 'setClickCount'	// action = setClickCount
+}
+{
+	state: { count: 0 },
+	action: x => ({ count: x + 2})	// custom action
+}
+{
+	state: { count: 0 },
+	action: x => ({ count: x + 2})	// custom action
+	reducer: (state, action) => ({ ...state, count: action.count})	// custom reducer
+}
+{
+	state: { count: 0 },
+	action: {
+		incClickCount: (state, action) => {
+			// custom reducer
+			return {...state, count: state.count + 1 }
+		},
+		decClickCount: (state, action) => {
+			// custom reducer
+			return {...state, count: state.count - 1 }
+		}
+	}
+}
+```
+
+If we have a single definition, we can pass it right to reduxify() (there's no need to wrap it inside an array).
+
+```javascript
+reduxify({ state: 'count' })
+```
+
+Or with default value:
+
+```javascript
+reduxify({ state: { count: 0 } })
+```
+
+simpler default value:
+
+```javascript
+reduxify({ count: 0 })
+```
+
+We can even pass a string. It is assumed as the name of the state item. action and reducer will be created based on default definition.
+
+```javascript
+reduxify('count')
+```
+
+It is also possible to specify each definition as an array:
+
+```javascript
+reduxify([
+	['count'],						// state
+	['SET_COUNT', 'count'],			// type, state
+	['SET_COUNT', { count: 10 }],	// type, state with initial value
+	['count', 'setClickCount' ],	// state, action name
+	['count', ['inc', 'dec']],	// state, multiple action name
+	['count', { 'setClickCount': (s, a) => ({ ...s, count: a.count }) }],	// state, action name, reducer
+	['count', 'setClickCount', (s, a) => ({ ...s, count: a.count }) ], // state, action name, reducer
+	['count', x => ({ count: x + 2}), , (s, a) => ({ ...s, count: a.count }) ],	// state, action, reducer
+	['SET_COUNT', 'count', x => ({ count: x + 2}), , (s, a) => ({ ...s, count: a.count }) ]	// type, state, action, reducer
+])
+```
+
+### Various examples
+
+reduxify([
+	{
+		state: { 'count': 0 },
+		action: {
+			'increment': (state, action) => ({ ...state, 'count': action.count + 1 }),
+			'decrement': (state, action) => ({ ...state, 'count': action.count - 1 }) 
+		}
+	},
+	[
+		{ 'count': 0 },
+		{
+			'increment': (state, action) => ({ ...state, 'count': action.count + 1 }),
+			'decrement': (state, action) => ({ ...state, 'count': action.count - 1 }) 
+		}
+	],
+	[
+		{ 'count': 0 },
+		[
+			{ 'increment': (state, action) => ({ ...state, count: action.count }) },
+			{ 'decrement': (state, action) => ({ ...state, count: action.count }) }
+		]
+	],
+	[
+		'count',
+		{
+			'increment': (state, action) => ({ ...state, 'count': (action.count || 0) + 1 }),
+			'decrement': (state, action) => ({ ...state, 'count': (action.count || 0) - 1 }) 
+		}
+	],
+	[
+		{ 'count': 0 },
+		[ 'increment', 'decrement' ]
+	],
+	{
+		state: { 'count': 0 },
+		action: {
+			'increment': { action: x => ( 'count': x + 1 ), reducer: (state, action) => ({ ...state, count: action.count }) },
+			'decrement': { action: x => ( 'count': x - 1 ), reducer: (state, action) => ({ ...state, count: action.count }) }
+		}
+	},
+	{
+		state: 'count'
+	},
+	{
+		state: 'count'
+		action: x => ({ type: 'SET_COUNT', count: x}),
+	},
+	{
+		state: 'count',
+		action: x => ({ count: x}),
+		reducer: (s, a) => ({ ...s, count: a.count })
+	},
+	{
+		type: 'SET_COUNT',
+		state: 'count',
+	},
+	{
+		type: 'SET_COUNT',
+		state: 'count',
+		action: x => ({ type: 'SET_COUNT', count: x}),
+	},
+	{
+		type: 'SET_COUNT',
+		state: 'count',
+		action: x => ({ type: 'SET_COUNT', count: x}),
+		reducer: (s, a) => ({ ...s, count: a.count })
+	},
+	{
+		state: { 'count': 0 },
+		action: [
+			{ 'increment': { x => ( 'count': x + 1 ): (state, action) => ({ ...state, count: action.count }) } },
+			{ 'decrement': { x => ( 'count': x - 1 ): (state, action) => ({ ...state, count: action.count }) } }
+		]
+	},
+	[
+		{ 'count': 0 },
+		{
+			'increment': { action: x => ( 'count': x + 1 ), reducer: (state, action) => ({ ...state, count: action.count }) },
+			'decrement': { action: x => ( 'count': x - 1 ), reducer: (state, action) => ({ ...state, count: action.count }) }
+		}
+	],
+	[
+		{ 'count': 0 },
+		[
+			{ 'increment': { action: x => ( 'count': x + 1 ), reducer: (state, action) => ({ ...state, count: action.count }) } },
+			{ 'decrement': { action: x => ( 'count': x - 1 ), reducer: (state, action) => ({ ...state, count: action.count }) } }
+		]
+	],
+	[
+		{ 'count': 0 },
+		[
+			{ 'increment': { x => ( 'count': x + 1 ): (state, action) => ({ ...state, count: action.count }) } },
+			{ 'decrement': { x => ( 'count': x - 1 ): (state, action) => ({ ...state, count: action.count }) } }
+		]
+	],
+	{
+		state: { layout: { type: 'boxed' } },
+		action: { 'setTemplateLayout': x => ({ layout: { type: x }}) },
+		reducer: (state, action) => ({ ...state, layout: { type: action.layout.type } })
+	},
+	[
+		{ 'logAdded': [] },
+		null,
+		(state, action) => {
+			const result = { ...state }
+
+			result.logs = [...state.logs]
+			result.logs.push(action.log)
+
+			return log
+		}
+	],
+	[
+		{ 'session_ended': true },
+		'setSessionEnd',
+		(state, action) => ({ ...state, session_ended: action.session_ended })
+	],
+	[
+		'session_ended',
+		'setSessionEnd',
+		(state, action) => ({ ...state, session_ended: action.session_ended })
+	],
+	[
+		{ 'session_ended': true },
+		'setSessionEnd'
+	],
+	[
+		'session_ended', 'setSessionEnd'
+	],
+	[	'session_ended'	],
+	'session_ended',
+	{
+		'SET_LOGGED_IN': 'loggedIn'
+	},
+	[
+		'SET_LOGGED_IN',
+		'loggedIn',
+	],
+	[
+		'SET_LOGGED_IN',
+		'loggedIn',
+		(s, a) => ({ ...s, a.loggedIn})
+	],
+	[
+		'SET_LOGGED_IN',
+		{ 'loggedIn': false },
+	],
+	[
+		'SET_LOGGED_IN',
+		{ 'loggedIn': false },
+		(s, a) => ({ ...s, a.loggedIn})
+	]
+]);
