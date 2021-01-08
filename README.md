@@ -372,6 +372,7 @@ reduxify([
 
 ### Various examples
 
+```javascript
 reduxify([
 	{
 		state: { 'count': 0 },
@@ -525,3 +526,4 @@ reduxify([
 		(s, a) => ({ ...s, a.loggedIn})
 	]
 ]);
+```
